@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8020:8000"   # localhost only — nginx proxies externally
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/data:/app/data
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
