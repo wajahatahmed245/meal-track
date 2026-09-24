@@ -91,10 +91,12 @@ const form = ref({
 const saved = ref(false)
 const initials = computed(() => form.value.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase())
 
-function save() {
-  store.user.name          = form.value.name
-  store.user.calorie_goal  = form.value.calorie_goal
-  store.user.water_goal_ml = form.value.water_goal_ml
+async function save() {
+  await store.updateMe({
+    name:          form.value.name,
+    calorie_goal:  form.value.calorie_goal,
+    water_goal_ml: form.value.water_goal_ml,
+  })
   saved.value = true
   setTimeout(() => { saved.value = false }, 2500)
 }

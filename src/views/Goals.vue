@@ -81,9 +81,15 @@ const form = ref({
 })
 const saved = ref(false)
 
-function saveGoals() {
-  store.user.calorie_goal  = form.value.calorie_goal
-  store.user.water_goal_ml = form.value.water_goal_ml
+async function saveGoals() {
+  await store.updateMe({
+    calorie_goal:  form.value.calorie_goal,
+    water_goal_ml: form.value.water_goal_ml,
+    exercise_goal_days: form.value.exercise_days,
+  })
+  store.user.calorie_goal      = form.value.calorie_goal
+  store.user.water_goal_ml     = form.value.water_goal_ml
+  store.user.exercise_goal_days = form.value.exercise_days
   saved.value = true
   setTimeout(() => { saved.value = false }, 2000)
 }

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date as datetime_date
 from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, field_validator
@@ -42,7 +42,7 @@ class UserUpdate(BaseModel):
 # ── Meals ─────────────────────────────────────────────────────────────────────
 
 class MealEntryCreate(BaseModel):
-    date: Optional[date] = None
+    date: Optional[datetime_date] = None
     time: str
     meal_type: MealType
     name: str
@@ -69,7 +69,7 @@ class MealEntryUpdate(BaseModel):
 
 class MealEntryOut(BaseModel):
     id: int
-    date: date
+    date: datetime_date
     time: str
     meal_type: str
     name: str
@@ -83,7 +83,7 @@ class MealEntryOut(BaseModel):
 # ── Drinks ────────────────────────────────────────────────────────────────────
 
 class DrinkEntryCreate(BaseModel):
-    date: Optional[date] = None
+    date: Optional[datetime_date] = None
     time: str
     name: str
     amount_ml: int
@@ -106,7 +106,7 @@ class DrinkEntryUpdate(BaseModel):
 
 class DrinkEntryOut(BaseModel):
     id: int
-    date: date
+    date: datetime_date
     time: str
     name: str
     amount_ml: int
@@ -118,7 +118,7 @@ class DrinkEntryOut(BaseModel):
 # ── Exercise ──────────────────────────────────────────────────────────────────
 
 class ExerciseLogCreate(BaseModel):
-    date: Optional[date] = None
+    date: Optional[datetime_date] = None
     exercise_type: str
     duration_minutes: int
     calories_burned: Optional[int] = None
@@ -136,7 +136,7 @@ class ExerciseLogUpdate(BaseModel):
 
 class ExerciseLogOut(BaseModel):
     id: int
-    date: date
+    date: datetime_date
     exercise_type: str
     duration_minutes: int
     calories_burned: Optional[int]
@@ -149,7 +149,7 @@ class ExerciseLogOut(BaseModel):
 # ── Dashboard / Summary ───────────────────────────────────────────────────────
 
 class DailySummaryOut(BaseModel):
-    date: date
+    date: datetime_date
     total_calories: int
     total_water_ml: int
     calories_burned: int
@@ -166,7 +166,7 @@ class DailySummaryOut(BaseModel):
 
 
 class WeeklyDayOut(BaseModel):
-    date: date
+    date: datetime_date
     day: str
     calories: int
     is_today: bool
@@ -180,7 +180,7 @@ class WeeklySummaryOut(BaseModel):
 
 
 class RangeDayOut(BaseModel):
-    date: date
+    date: datetime_date
     calories: int
     water_ml: int
     exercise_completed: bool

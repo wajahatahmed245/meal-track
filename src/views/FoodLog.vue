@@ -13,55 +13,43 @@
     <div class="summary-bar card">
       <div class="summary-item">
         <span class="s-icon">🔥</span>
-        <div><div class="s-val">{{ store.totalCalories.toLocaleString() }}</div><div class="s-label">Calories</div></div>
+        <div><div class="s-val">{{ dayTotalCal.toLocaleString() }}</div><div class="s-label">Calories</div></div>
       </div>
       <div class="summary-sep" />
       <div class="summary-item">
         <span class="s-icon">🍽️</span>
-        <div><div class="s-val">{{ store.meals.length }}</div><div class="s-label">Items</div></div>
+        <div><div class="s-val">{{ dayMeals.length }}</div><div class="s-label">Items</div></div>
       </div>
       <div class="summary-sep" />
       <div class="summary-item">
         <span class="s-icon">💧</span>
-        <div><div class="s-val">{{ (store.totalWaterMl / 1000).toFixed(1) }}L</div><div class="s-label">Water</div></div>
+        <div><div class="s-val">{{ (dayTotalWater / 1000).toFixed(1) }}L</div><div class="s-label">Water</div></div>
       </div>
       <div class="summary-sep" />
       <div class="summary-item">
-        <span class="s-icon">{{ store.exercise.completed ? '✅' : '⬜' }}</span>
-        <div><div class="s-val">{{ store.exercise.completed ? 'Done' : 'None' }}</div><div class="s-label">Exercise</div></div>
+        <span class="s-icon">{{ dayExerciseDone ? '✅' : '⬜' }}</span>
+        <div><div class="s-val">{{ dayExerciseDone ? 'Done' : 'None' }}</div><div class="s-label">Exercise</div></div>
       </div>
     </div>
 
     <!-- Meal sections -->
     <div class="meal-sections">
-      <div
-        v-for="mealType in mealTypeOrder"
-        :key="mealType"
-        class="meal-section card"
-      >
+      <div v-for="mealType in mealTypeOrder" :key="mealType" class="meal-section card">
         <div class="meal-section-header">
           <span class="ms-icon">{{ mealTypeEmoji[mealType] || '🍽️' }}</span>
           <span class="ms-name">{{ mealType }}</span>
-          <span v-if="groupedMeals[mealType]" class="ms-cal">
-            {{ groupedMeals[mealType].total }} cal
-          </span>
-          <button class="btn btn-secondary btn-sm" style="margin-left: auto;" @click="openModal(mealType)">
-            + Add
-          </button>
+          <span v-if="dayGrouped[mealType]" class="ms-cal">{{ dayGrouped[mealType].total }} cal</span>
+          <button class="btn btn-secondary btn-sm" style="margin-left: auto;" @click="openModal(mealType)">+ Add</button>
         </div>
 
-        <div v-if="groupedMeals[mealType]" class="ms-items">
-          <div
-            v-for="item in groupedMeals[mealType].items"
-            :key="item.id"
-            class="ms-item"
-          >
+        <div v-if="dayGrouped[mealType]" class="ms-items">
+          <div v-for="item in dayGrouped[mealType].items" :key="item.id" class="ms-item">
             <span class="ms-emoji">{{ item.emoji }}</span>
             <span class="ms-item-name">{{ item.name }}</span>
             <span class="ms-item-cal">{{ item.calories }} cal</span>
             <div class="ms-actions">
               <button class="icon-btn" @click="editItem = item; showModal = true">✏️</button>
-              <button class="icon-btn del" @click="store.deleteMeal(item.id)">🗑️</button>
+              <button class="icon-btn del" @click="removeMeal(item.id)">🗑️</button>
             </div>
           </div>
         </div>
@@ -74,8 +62,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { store } from '../store/index.js'
+import { api }   from '../api.js'
 import MealModal from '../components/MealModal.vue'
 import { mealTypeEmoji, mealTypeOrder as mto } from '../data/mock.js'
 
@@ -84,20 +73,66 @@ const mealTypeOrder = Object.keys(mto).sort((a, b) => mto[a] - mto[b])
 const offset = ref(0)
 const isToday = computed(() => offset.value === 0)
 
+const dayMeals    = ref([])
+const dayDrinks   = ref([])
+const dayExercise = ref(null)
+
+const targetDate = computed(() => {
+  const d = new Date()
+  d.setDate(d.getDate() + offset.value)
+  return d.toISOString().split('T')[0]
+})
+
 const dateLabel = computed(() => {
-  const d = new Date(Date.now() + 5 * 60 * 60 * 1000 + offset.value * 86400000)
-  if (offset.value === 0) return 'Today'
+  if (offset.value === 0)  return 'Today'
   if (offset.value === -1) return 'Yesterday'
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  const d = new Date()
+  d.setDate(d.getDate() + offset.value)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 })
 
 const prevDay = () => { offset.value-- }
 const nextDay = () => { if (offset.value < 0) offset.value++ }
 
-const groupedMeals = computed(() => store.groupedMeals)
+// Sync today's slot with the reactive store; fetch past days from API
+watch(offset, async () => {
+  if (offset.value === 0) {
+    dayMeals.value    = store.meals
+    dayDrinks.value   = store.drinks
+    dayExercise.value = store.exercise
+  } else {
+    const summary = await api.getDaySummary(targetDate.value)
+    dayMeals.value    = summary.meals
+    dayDrinks.value   = summary.drinks
+    dayExercise.value = summary.exercise
+  }
+}, { immediate: true })
 
-const showModal = ref(false)
-const editItem  = ref(null)
+// Keep today slot live when store updates
+watch(() => [store.meals, store.drinks, store.exercise], () => {
+  if (offset.value === 0) {
+    dayMeals.value    = store.meals
+    dayDrinks.value   = store.drinks
+    dayExercise.value = store.exercise
+  }
+}, { deep: true })
+
+const dayTotalCal   = computed(() => dayMeals.value.reduce((s, m) => s + m.calories, 0))
+const dayTotalWater = computed(() => dayDrinks.value.reduce((s, d) => s + d.amount_ml, 0))
+const dayExerciseDone = computed(() => dayExercise.value?.completed || false)
+
+const dayGrouped = computed(() => {
+  const groups = {}
+  dayMeals.value.forEach(m => {
+    if (!groups[m.meal_type]) groups[m.meal_type] = { time: m.time, items: [], total: 0 }
+    groups[m.meal_type].items.push(m)
+    groups[m.meal_type].total += m.calories
+  })
+  return groups
+})
+
+const showModal   = ref(false)
+const editItem    = ref(null)
 const defaultMeal = ref('Breakfast')
 
 function openModal(mealType) {
@@ -106,14 +141,35 @@ function openModal(mealType) {
   showModal.value   = true
 }
 
-function save(data) {
+async function save(data) {
+  const entry = { ...data, meal_type: data.meal_type || defaultMeal.value, date: targetDate.value }
   if (editItem.value) {
-    store.updateMeal(editItem.value.id, data)
+    if (offset.value === 0) {
+      await store.updateMeal(editItem.value.id, entry)
+    } else {
+      const updated = await api.updateMeal(editItem.value.id, entry)
+      const idx = dayMeals.value.findIndex(m => m.id === editItem.value.id)
+      if (idx !== -1) dayMeals.value[idx] = updated
+    }
   } else {
-    store.addMeal({ ...data, meal_type: data.meal_type || defaultMeal.value })
+    if (offset.value === 0) {
+      await store.addMeal(entry)
+    } else {
+      const created = await api.addMeal(entry)
+      dayMeals.value.push(created)
+    }
   }
   showModal.value = false
   editItem.value  = null
+}
+
+async function removeMeal(id) {
+  if (offset.value === 0) {
+    await store.deleteMeal(id)
+  } else {
+    await api.deleteMeal(id)
+    dayMeals.value = dayMeals.value.filter(m => m.id !== id)
+  }
 }
 </script>
 
@@ -137,12 +193,10 @@ function save(data) {
 .summary-sep { width: 1px; height: 32px; background: var(--border-light); margin: 0 4px; }
 
 .meal-sections { display: flex; flex-direction: column; gap: 14px; }
-
 .meal-section { overflow: hidden; }
 .meal-section-header {
   display: flex; align-items: center; gap: 10px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border-light);
+  padding: 14px 18px; border-bottom: 1px solid var(--border-light);
 }
 .ms-icon { font-size: 18px; }
 .ms-name { font-size: 14px; font-weight: 600; }
@@ -153,8 +207,7 @@ function save(data) {
 .ms-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 10px; border-radius: var(--radius-xs);
-  border: 1px solid var(--border-light);
-  background: #fff;
+  border: 1px solid var(--border-light); background: #fff;
   transition: background 0.12s;
 }
 .ms-item:hover { background: var(--bg); }
@@ -170,6 +223,5 @@ function save(data) {
 }
 .icon-btn:hover { background: var(--green-50); }
 .icon-btn.del:hover { background: #fff0f0; }
-
 .ms-empty { padding: 12px 18px; font-size: 13px; color: var(--text-light); }
 </style>

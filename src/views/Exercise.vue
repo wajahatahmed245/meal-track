@@ -16,6 +16,7 @@
         <div v-else class="status-prompt">Log your workout to earn your daily streak! 💪</div>
       </div>
       <button
+        v-if="store.exercise.id"
         class="toggle-btn"
         :class="store.exercise.completed ? 'btn btn-outline' : 'btn btn-primary'"
         @click="store.toggleExercise()"
@@ -57,8 +58,8 @@
         </div>
       </div>
 
-      <button class="btn btn-primary" @click="saveExercise">
-        💾 Save Exercise Log
+      <button class="btn btn-primary" @click="saveExercise" :disabled="saving">
+        {{ saving ? 'Saving…' : '💾 Save Exercise Log' }}
       </button>
     </div>
 
@@ -67,8 +68,8 @@
       <div class="section-title">🔥 This Week's Streak</div>
       <div class="streak-week">
         <div
-          v-for="(day, i) in weekDays"
-          :key="i"
+          v-for="day in weekDays"
+          :key="day.label"
           class="streak-day"
           :class="{ done: day.done, today: day.isToday }"
         >
@@ -81,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { store } from '../store/index.js'
 
 const exerciseTypes = [
@@ -95,21 +96,39 @@ const exerciseTypes = [
   { name: 'Sports',       emoji: '⚽' },
 ]
 
-const exForm = ref({ ...store.exercise })
+const exForm = ref({
+  type:             store.exercise.type || 'Morning Walk',
+  duration_minutes: store.exercise.duration_minutes || 30,
+  calories_burned:  store.exercise.calories_burned  || 0,
+  time:             store.exercise.time || '06:00',
+})
 
-function saveExercise() {
-  store.setExercise({ ...exForm.value, completed: true })
+const saving = ref(false)
+
+async function saveExercise() {
+  saving.value = true
+  try {
+    await store.setExercise({ ...exForm.value, completed: true })
+  } finally {
+    saving.value = false
+  }
 }
 
-const weekDays = [
-  { label: 'Mon', done: true,  isToday: false },
-  { label: 'Tue', done: true,  isToday: false },
-  { label: 'Wed', done: false, isToday: false },
-  { label: 'Thu', done: true,  isToday: false },
-  { label: 'Fri', done: false, isToday: false },
-  { label: 'Sat', done: true,  isToday: false },
-  { label: 'Sun', done: store.exercise.completed, isToday: true },
-]
+const weekDays = computed(() => {
+  const LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  if (store.weeklyTrend.length === 7) {
+    return store.weeklyTrend.map((d, i) => ({
+      label:   LABELS[i],
+      done:    d.exercise_completed,
+      isToday: d.isToday,
+    }))
+  }
+  return LABELS.map((label, i) => ({
+    label,
+    done:    false,
+    isToday: i === new Date().getDay() - 1,
+  }))
+})
 </script>
 
 <style scoped>
@@ -150,7 +169,6 @@ const weekDays = [
 .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 @media (max-width: 480px) { .form-row-3 { grid-template-columns: 1fr 1fr; } }
 
-/* Streak */
 .streak-week {
   display: flex; justify-content: space-around; gap: 6px;
   padding: 0 4px;
@@ -167,9 +185,7 @@ const weekDays = [
   background: var(--green-500); color: #fff;
   box-shadow: 0 2px 8px rgba(34,197,94,0.4);
 }
-.streak-day.today .streak-circle {
-  border: 2px solid var(--green-500);
-}
+.streak-day.today .streak-circle { border: 2px solid var(--green-500); }
 .streak-label { font-size: 11px; font-weight: 600; color: var(--text-muted); }
 .streak-day.today .streak-label { color: var(--green-600); }
 </style>

@@ -55,8 +55,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import VChart from 'vue-echarts'
+import { api } from '../api.js'
 
 // ── Mock 30-day data (Aug 22 – Sep 21 2026) ─────────────────────────
 const calData = [
@@ -322,12 +323,17 @@ const weeklyOption = computed(() => ({
   }],
 }))
 
-// ── Stats ─────────────────────────────────────────────────────────────
+// ── Stats from API ────────────────────────────────────────────────────
+const apiStats = ref({ days_logged: 0, exercise_days: 0, current_streak: 0, avg_calories_30d: 0 })
+onMounted(async () => {
+  try { apiStats.value = await api.getStats() } catch {}
+})
+
 const stats = computed(() => [
-  { icon: '🔥', val: avgCal.value.toLocaleString(), label: 'Avg cal/day (30d)' },
-  { icon: '📅', val: '21',   label: 'Days Logged'   },
-  { icon: '🏃', val: '16',   label: 'Exercise Days' },
-  { icon: '⚡', val: '14d',  label: 'Current Streak' },
+  { icon: '🔥', val: (apiStats.value.avg_calories_30d || avgCal.value).toLocaleString(), label: 'Avg cal/day (30d)' },
+  { icon: '📅', val: String(apiStats.value.days_logged),   label: 'Days Logged'    },
+  { icon: '🏃', val: String(apiStats.value.exercise_days), label: 'Exercise Days'  },
+  { icon: '⚡', val: apiStats.value.current_streak + 'd',  label: 'Current Streak' },
 ])
 
 // ── Calendar ──────────────────────────────────────────────────────────
