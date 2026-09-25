@@ -86,5 +86,9 @@ class ExerciseLog(Base):
     time: Mapped[str] = mapped_column(String(5), nullable=False, default="00:00")
     completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    # Set when the entry was synced from an external source (e.g. gym-tracker).
+    # Used for idempotent upsert — re-delivering the same event is safe.
+    source_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, unique=True, index=True)
+    source_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="exercises")

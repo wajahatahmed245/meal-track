@@ -1,11 +1,16 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .consumer import run_consumer
 from .database import get_db, init_db
 from .routers import auth, drinks, exercise, food, meals, summary, user
 from .seed import seed_default_user
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -14,7 +19,18 @@ async def lifespan(app: FastAPI):
     async for db in get_db():
         await seed_default_user(db)
         break
+
+    consumer_task = asyncio.create_task(run_consumer(), name="exercise-consumer")
+    logger.info("Exercise event consumer started")
+
     yield
+
+    consumer_task.cancel()
+    try:
+        await consumer_task
+    except asyncio.CancelledError:
+        pass
+    logger.info("Exercise event consumer stopped")
 
 
 app = FastAPI(title="MealTrack API", lifespan=lifespan)

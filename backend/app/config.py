@@ -18,5 +18,8 @@ class Settings(BaseSettings):
     default_user_email: str = "wajahatahmad056@gmail.com"
     default_user_password: str = "change-me"
 
+    # Redis Streams — event bus for cross-app integration
+    redis_url: str = "redis://localhost:6379/0"
+
 
 settings = Settings()
