@@ -60,21 +60,22 @@ let pollTimer = null
 
 function startPolling() {
   stopPolling()
-  pollTimer = setInterval(() => store.loadToday(), 30_000)
+  pollTimer = setInterval(() => store.loadToday().catch(() => {}), 15_000)
 }
 
 function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
 }
 
-onUnmounted(stopPolling)
-
-// Refresh immediately when tab becomes visible again (e.g. user switches back)
-document.addEventListener('visibilitychange', () => {
-  if (authed.value && document.visibilityState === 'visible') store.loadToday()
-})
+function onVisibilityChange() {
+  if (authed.value && document.visibilityState === 'visible') {
+    store.loadToday().catch(() => {})
+  }
+}
 
 onMounted(async () => {
+  document.addEventListener('visibilitychange', onVisibilityChange)
+
   const token = localStorage.getItem('mt_token')
   if (token) {
     try {
@@ -85,6 +86,11 @@ onMounted(async () => {
       localStorage.removeItem('mt_token')
     }
   }
+})
+
+onUnmounted(() => {
+  stopPolling()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
 async function login() {
