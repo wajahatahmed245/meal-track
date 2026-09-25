@@ -3,5 +3,5 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig(({ command }) => ({
   plugins: [vue()],
-  base: command === 'build' ? '/meal/' : '/',
+  base: '/',
 }))

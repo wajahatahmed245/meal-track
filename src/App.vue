@@ -56,12 +56,31 @@ const onResize = () => { isMobile.value = window.innerWidth < 768 }
 onMounted(()  => window.addEventListener('resize', onResize))
 onUnmounted(() => window.removeEventListener('resize', onResize))
 
+let pollTimer = null
+
+function startPolling() {
+  stopPolling()
+  pollTimer = setInterval(() => store.loadToday(), 30_000)
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+}
+
+onUnmounted(stopPolling)
+
+// Refresh immediately when tab becomes visible again (e.g. user switches back)
+document.addEventListener('visibilitychange', () => {
+  if (authed.value && document.visibilityState === 'visible') store.loadToday()
+})
+
 onMounted(async () => {
   const token = localStorage.getItem('mt_token')
   if (token) {
     try {
       await store.loadToday()
       authed.value = true
+      startPolling()
     } catch {
       localStorage.removeItem('mt_token')
     }
@@ -77,6 +96,7 @@ async function login() {
     localStorage.setItem('mt_token', access_token)
     await store.loadToday()
     authed.value = true
+    startPolling()
   } catch (e) {
     loginError.value = e.status === 401 ? 'Invalid email or password.' : 'Could not connect. Try again.'
   } finally {

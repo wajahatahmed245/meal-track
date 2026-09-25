@@ -10,12 +10,21 @@ from typing import Optional
 
 import httpx
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 API_BASE = os.environ.get("MEAL_API_BASE_URL", "http://localhost:8010/api")
 EMAIL    = os.environ.get("MEAL_USER_EMAIL", "wajahatahmad056@gmail.com")
 PASSWORD = os.environ.get("MEAL_USER_PASSWORD", "Wajahat@MealTrack2026!")
 
-mcp = FastMCP("MealTrack", stateless_http=True)
+ALLOWED_HOSTS = os.environ.get("MCP_ALLOWED_HOSTS", "wajahat-meal.duckdns.org").split(",")
+
+mcp = FastMCP(
+    "MealTrack",
+    stateless_http=True,
+    transport_security=TransportSecuritySettings(
+        allowed_hosts=["localhost", "127.0.0.1"] + ALLOWED_HOSTS,
+    ),
+)
 
 
 def _get_token() -> str:
@@ -122,6 +131,20 @@ def get_food_log(log_date: Optional[str] = None) -> str:
     return "\n".join(lines)
 
 
+_MEAL_TYPE_ALIASES = {
+    "snack":            "Afternoon Snack",
+    "afternoon snack":  "Afternoon Snack",
+    "morning snack":    "Morning Snack",
+    "late snack":       "Late Snack",
+    "breakfast":        "Breakfast",
+    "lunch":            "Lunch",
+    "dinner":           "Dinner",
+}
+
+def _normalize_meal_type(meal_type: str) -> str:
+    return _MEAL_TYPE_ALIASES.get(meal_type.strip().lower(), meal_type)
+
+
 @mcp.tool()
 def add_food_entry(
     name: str,
@@ -137,7 +160,7 @@ def add_food_entry(
     Args:
         name: Food item name (e.g. 'Banana', 'Chicken breast 200g')
         calories: Calories in kcal (e.g. 89)
-        meal_type: One of 'Breakfast', 'Lunch', 'Dinner', 'Snack'
+        meal_type: One of 'Breakfast', 'Morning Snack', 'Lunch', 'Afternoon Snack', 'Dinner', 'Late Snack'. 'Snack' is also accepted and maps to 'Afternoon Snack'.
         time: Time in HH:MM format (defaults to current time)
         emoji: Optional emoji for the food item
         note: Optional note
@@ -146,7 +169,7 @@ def add_food_entry(
     payload = {
         "name": name,
         "calories": calories,
-        "meal_type": meal_type,
+        "meal_type": _normalize_meal_type(meal_type),
         "time": time or datetime.now().strftime("%H:%M"),
         "emoji": emoji or "🍽️",
         "note": note or "",

@@ -1,5 +1,5 @@
 const BASE = import.meta.env.VITE_API_BASE ||
-  (import.meta.env.DEV ? 'http://localhost:8010/api' : '/meal/api')
+  (import.meta.env.DEV ? 'http://localhost:8010/api' : '/api')
 
 function authHeaders() {
   const token = localStorage.getItem('mt_token')
