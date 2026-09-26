@@ -77,18 +77,20 @@ const dayMeals    = ref([])
 const dayDrinks   = ref([])
 const dayExercise = ref(null)
 
-const targetDate = computed(() => {
-  const d = new Date()
-  d.setDate(d.getDate() + offset.value)
-  return d.toISOString().split('T')[0]
-})
+// Returns YYYY-MM-DD in PKT (UTC+5). offsetDays shifts by that many calendar days.
+function pktDateStr(offsetDays = 0) {
+  const pkt = new Date(Date.now() + 5 * 60 * 60 * 1000)
+  pkt.setUTCDate(pkt.getUTCDate() + offsetDays)
+  return pkt.toISOString().split('T')[0]
+}
+
+const targetDate = computed(() => pktDateStr(offset.value))
 
 const dateLabel = computed(() => {
   if (offset.value === 0)  return 'Today'
   if (offset.value === -1) return 'Yesterday'
-  const d = new Date()
-  d.setDate(d.getDate() + offset.value)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const d = new Date(pktDateStr(offset.value) + 'T00:00:00Z')
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 })
 
 const prevDay = () => { offset.value-- }

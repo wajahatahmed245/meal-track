@@ -127,7 +127,9 @@ export const store = reactive({
 })
 
 function todayStr() {
-  return new Date().toISOString().split('T')[0]
+  // Use PKT (UTC+5) date, not UTC — server is also configured for Asia/Karachi
+  const pkt = new Date(Date.now() + 5 * 60 * 60 * 1000)
+  return pkt.toISOString().split('T')[0]
 }
 
 // Keep these named exports so existing views importing them still work
