@@ -1,4 +1,4 @@
-from datetime import date as datetime_date
+from datetime import date as datetime_date, datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, field_validator
@@ -198,3 +198,61 @@ class FoodItem(BaseModel):
     calories: int
     emoji: str
     per: str
+
+
+# ── AI Daily Evaluation ───────────────────────────────────────────────────────
+
+class MealEvaluationItem(BaseModel):
+    food_name: str
+    meal_type: str
+    time: str
+    logged_calories: int
+    assessment: str
+    likely_benefits: List[str]
+    things_to_watch: List[str]
+
+
+class GeminiEvaluationResult(BaseModel):
+    """Structured output schema used for Gemini response validation."""
+    overall_score: int
+    overall_assessment: str
+    what_went_well: List[str]
+    things_to_watch: List[str]
+    meal_evaluations: List[MealEvaluationItem]
+    daily_benefits: List[str]
+    daily_concerns: List[str]
+    improve_tomorrow: List[str]
+    reduce_or_avoid_repeating_tomorrow: List[str]
+    final_recommendation: str
+    confidence: str
+
+
+class AiEvaluationOut(BaseModel):
+    id: int
+    date: datetime_date
+    overall_score: int
+    evaluation_json: str
+    model_name: str
+    prompt_version: str
+    trigger_source: str
+    input_hash: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AiEvaluationDetail(BaseModel):
+    """Full evaluation with parsed evaluation data for frontend display."""
+    id: int
+    date: datetime_date
+    overall_score: int
+    model_name: str
+    prompt_version: str
+    trigger_source: str
+    input_hash: str
+    created_at: datetime
+    updated_at: datetime
+    evaluation: GeminiEvaluationResult
+
+    model_config = {"from_attributes": True}

@@ -52,4 +52,7 @@ export const api = {
   getRangeSummary:  (start, end)   => request('GET', `/summary/range?start=${start}&end=${end}`),
   getStats:         ()             => request('GET', '/summary/stats'),
   searchFood:       (q)            => request('GET', `/food/search?q=${encodeURIComponent(q)}`),
+
+  getAiEvaluation:      (date)             => request('GET',  `/ai-evaluation?day=${date}`),
+  generateAiEvaluation: (date, force=false) => request('POST', `/ai-evaluation?day=${date}&force=${force}`),
 }

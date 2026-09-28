@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from sqlalchemy import (
     Boolean, Date, DateTime, Enum, Float, ForeignKey,
-    Integer, String, func,
+    Integer, String, Text, UniqueConstraint, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -40,6 +40,7 @@ class User(Base):
     meals: Mapped[List["MealEntry"]] = relationship("MealEntry", back_populates="user", cascade="all, delete-orphan")
     drinks: Mapped[List["DrinkEntry"]] = relationship("DrinkEntry", back_populates="user", cascade="all, delete-orphan")
     exercises: Mapped[List["ExerciseLog"]] = relationship("ExerciseLog", back_populates="user", cascade="all, delete-orphan")
+    evaluations: Mapped[List["AiDailyEvaluation"]] = relationship("AiDailyEvaluation", back_populates="user", cascade="all, delete-orphan")
 
 
 class MealEntry(Base):
@@ -92,3 +93,27 @@ class ExerciseLog(Base):
     source_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="exercises")
+
+
+class AiDailyEvaluation(Base):
+    __tablename__ = "ai_daily_evaluations"
+    __table_args__ = (UniqueConstraint("user_id", "date", name="uq_ai_eval_user_date"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+
+    overall_score: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Full Gemini structured response stored as JSON text
+    evaluation_json: Mapped[str] = mapped_column(Text, nullable=False)
+    model_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(20), nullable=False)
+    # "scheduled" or "manual"
+    trigger_source: Mapped[str] = mapped_column(String(20), nullable=False)
+    # SHA-256 of the meal input — lets UI detect stale evaluations after meal edits
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    user: Mapped["User"] = relationship("User", back_populates="evaluations")

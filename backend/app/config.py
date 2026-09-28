@@ -21,5 +21,10 @@ class Settings(BaseSettings):
     # Redis Streams — event bus for cross-app integration
     redis_url: str = "redis://localhost:6379/0"
 
+    # Gemini AI evaluation
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-flash-lite-latest"
+    scheduler_timezone: str = "Asia/Karachi"
+
 
 settings = Settings()

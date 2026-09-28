@@ -18,11 +18,11 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 const tabs = [
-  { path: '/',          icon: '🏠', label: 'Home'     },
-  { path: '/food',      icon: '🍽️', label: 'Food'     },
-  { path: '/hydration', icon: '💧', label: 'Water'    },
-  { path: '/exercise',  icon: '🏃', label: 'Exercise' },
-  { path: '/insights',  icon: '💡', label: 'Insights' },
+  { path: '/',               icon: '🏠', label: 'Home'     },
+  { path: '/food',           icon: '🍽️', label: 'Food'     },
+  { path: '/hydration',      icon: '💧', label: 'Water'    },
+  { path: '/exercise',       icon: '🏃', label: 'Exercise' },
+  { path: '/ai-evaluation',  icon: '🤖', label: 'AI'       },
 ]
 
 const isActive = (path) => path === '/' ? route.path === '/' : route.path.startsWith(path)

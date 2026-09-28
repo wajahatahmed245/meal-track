@@ -67,34 +67,15 @@ import { store } from '../store/index.js'
 import { api }   from '../api.js'
 import MealModal from '../components/MealModal.vue'
 import { mealTypeEmoji, mealTypeOrder as mto } from '../data/mock.js'
+import { useDateNav } from '../composables/useDateNav.js'
 
 const mealTypeOrder = Object.keys(mto).sort((a, b) => mto[a] - mto[b])
 
-const offset = ref(0)
-const isToday = computed(() => offset.value === 0)
+const { offset, isToday, targetDate, dateLabel, prevDay, nextDay } = useDateNav(0, 0)
 
 const dayMeals    = ref([])
 const dayDrinks   = ref([])
 const dayExercise = ref(null)
-
-// Returns YYYY-MM-DD in PKT (UTC+5). offsetDays shifts by that many calendar days.
-function pktDateStr(offsetDays = 0) {
-  const pkt = new Date(Date.now() + 5 * 60 * 60 * 1000)
-  pkt.setUTCDate(pkt.getUTCDate() + offsetDays)
-  return pkt.toISOString().split('T')[0]
-}
-
-const targetDate = computed(() => pktDateStr(offset.value))
-
-const dateLabel = computed(() => {
-  if (offset.value === 0)  return 'Today'
-  if (offset.value === -1) return 'Yesterday'
-  const d = new Date(pktDateStr(offset.value) + 'T00:00:00Z')
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-})
-
-const prevDay = () => { offset.value-- }
-const nextDay = () => { if (offset.value < 0) offset.value++ }
 
 // Sync today's slot with the reactive store; fetch past days from API
 watch(offset, async () => {
