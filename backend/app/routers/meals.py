@@ -9,6 +9,7 @@ from ..database import get_db
 from ..deps import get_current_user
 from ..models import MealEntry, User
 from ..schemas import MealEntryCreate, MealEntryOut, MealEntryUpdate
+from ..utils import today_pkt
 
 router = APIRouter(prefix="/api/meals", tags=["meals"])
 
@@ -42,7 +43,7 @@ async def add_meal(
 ):
     entry = MealEntry(
         user_id=user.id,
-        date=payload.date or date.today(),
+        date=payload.date or today_pkt(),
         time=payload.time,
         meal_type=payload.meal_type,
         name=payload.name,

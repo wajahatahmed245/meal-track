@@ -9,6 +9,7 @@ from ..database import get_db
 from ..deps import get_current_user
 from ..models import DrinkEntry, User
 from ..schemas import DrinkEntryCreate, DrinkEntryOut, DrinkEntryUpdate
+from ..utils import today_pkt
 
 router = APIRouter(prefix="/api/drinks", tags=["drinks"])
 
@@ -42,7 +43,7 @@ async def add_drink(
 ):
     entry = DrinkEntry(
         user_id=user.id,
-        date=payload.date or date.today(),
+        date=payload.date or today_pkt(),
         time=payload.time,
         name=payload.name,
         amount_ml=payload.amount_ml,

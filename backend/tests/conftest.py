@@ -17,6 +17,8 @@ from app.models import (
     AiFoodSuggestionItem,
     AiFoodSuggestionSession,
     AiFoodSuggestionUsage,
+    DrinkEntry,
+    ExerciseLog,
     MealEntry,
     MealType,
     User,
@@ -83,6 +85,8 @@ async def db_session(test_user) -> AsyncSession:
         await session.execute(delete(AiFoodSuggestionSession))
         await session.execute(delete(AiFoodSuggestionUsage))
         await session.execute(delete(MealEntry))
+        await session.execute(delete(DrinkEntry))
+        await session.execute(delete(ExerciseLog))
         await session.commit()
 
 

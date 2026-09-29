@@ -9,6 +9,7 @@ from ..database import get_db
 from ..deps import get_current_user
 from ..models import ExerciseLog, User
 from ..schemas import ExerciseLogCreate, ExerciseLogOut, ExerciseLogUpdate
+from ..utils import today_pkt
 
 router = APIRouter(prefix="/api/exercise", tags=["exercise"])
 
@@ -35,7 +36,7 @@ async def log_exercise(
 ):
     entry = ExerciseLog(
         user_id=user.id,
-        date=payload.date or date.today(),
+        date=payload.date or today_pkt(),
         exercise_type=payload.exercise_type,
         duration_minutes=payload.duration_minutes,
         calories_burned=payload.calories_burned,

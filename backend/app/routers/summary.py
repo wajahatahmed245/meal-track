@@ -12,6 +12,7 @@ from ..schemas import (
     DailySummaryOut, DrinkEntryOut, ExerciseLogOut,
     MealEntryOut, RangeDayOut, StatsOut, WeeklyDayOut, WeeklySummaryOut,
 )
+from ..utils import today_pkt
 
 router = APIRouter(prefix="/api/summary", tags=["summary"])
 
@@ -23,7 +24,7 @@ async def today_summary(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await _build_daily(db, user, date.today())
+    return await _build_daily(db, user, today_pkt())
 
 
 @router.get("/day", response_model=DailySummaryOut)
@@ -40,7 +41,7 @@ async def weekly_summary(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    today = date.today()
+    today = today_pkt()
     week_start = today - timedelta(days=today.weekday())  # Monday
     days_out: List[WeeklyDayOut] = []
 
@@ -136,7 +137,7 @@ async def stats_overview(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    today = date.today()
+    today = today_pkt()
     start_30 = today - timedelta(days=29)
 
     # Days with at least one meal logged in last 30 days
