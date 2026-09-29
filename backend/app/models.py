@@ -4,6 +4,8 @@ import enum
 from datetime import date, datetime
 from typing import List, Optional
 
+import json as _json
+
 from sqlalchemy import (
     Boolean, Date, DateTime, Enum, Float, ForeignKey,
     Integer, String, Text, UniqueConstraint, func,
@@ -179,10 +181,19 @@ class AiFoodSuggestionItem(Base):
     price_max_pkr: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     # Projected total after eating this item (snapshot + estimated_calories)
     calories_after: Mapped[int] = mapped_column(Integer, nullable=False)
-    # budget | balanced | restaurant
+    # budget | balanced | restaurant | snack | protein
     category_tag: Mapped[str] = mapped_column(String(30), nullable=False, default="")
     notes: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    # JSON array of {"item": str, "calories": int} — individual food components
+    components_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
 
     session: Mapped["AiFoodSuggestionSession"] = relationship(
         "AiFoodSuggestionSession", back_populates="items"
     )
+
+    @property
+    def components(self) -> list:
+        try:
+            return _json.loads(self.components_json or "[]")
+        except Exception:
+            return []

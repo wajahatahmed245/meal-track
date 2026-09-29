@@ -244,13 +244,21 @@ class AiEvaluationOut(BaseModel):
 
 # ── AI Food Suggestions ───────────────────────────────────────────────────────
 
+class SuggestionComponent(BaseModel):
+    """One food item within a meal combination."""
+    item: str
+    calories: int
+
+
 class FoodSuggestionItem(BaseModel):
-    """Gemini raw output item — also used as the ORM item serialiser."""
+    """Gemini raw output item."""
     name: str
-    description: str
+    components: List[SuggestionComponent] = []
+    description: str = ""
     estimated_calories: int
     estimated_price_min_pkr: int
     estimated_price_max_pkr: int
+    category_tag: str = ""
     notes: str = ""
 
     model_config = {"from_attributes": True}
@@ -268,6 +276,7 @@ class FoodSuggestionItemOut(BaseModel):
     calories_after: int
     category_tag: str
     notes: str
+    components: List[SuggestionComponent] = []
 
     model_config = {"from_attributes": True}
 

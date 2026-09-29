@@ -30,6 +30,7 @@ async def init_db():
                 "CREATE UNIQUE INDEX IF NOT EXISTS uq_exercise_logs_source_id "
                 "ON exercise_logs(source_id) WHERE source_id IS NOT NULL"
             ),
+            "ALTER TABLE ai_food_suggestion_items ADD COLUMN components_json TEXT NOT NULL DEFAULT '[]'",
         ):
             try:
                 await conn.execute(text(stmt))

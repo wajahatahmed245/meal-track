@@ -89,8 +89,15 @@
         <div class="suggestion-badge">{{ TAG_LABELS[item.category_tag] || item.category_tag }}</div>
         <div class="suggestion-name">{{ item.name }}</div>
         <div class="suggestion-desc">{{ item.description }}</div>
+        <!-- Component breakdown -->
+        <ul v-if="item.components && item.components.length" class="component-list">
+          <li v-for="(c, ci) in item.components" :key="ci" class="component-row">
+            <span class="component-name">{{ c.item }}</span>
+            <span class="component-cal">{{ c.calories }} kcal</span>
+          </li>
+        </ul>
         <div class="suggestion-chips">
-          <span class="chip chip-cal">~{{ item.estimated_calories }} kcal</span>
+          <span class="chip chip-cal">Total ~{{ item.estimated_calories }} kcal</span>
           <span class="chip chip-price">Est. PKR {{ item.price_min_pkr }}–{{ item.price_max_pkr }}</span>
           <span class="chip chip-after">After eating: {{ item.calories_after }} / {{ latestSession.daily_goal_snapshot }} kcal</span>
         </div>
@@ -127,8 +134,14 @@
           >
             <div class="suggestion-badge">{{ TAG_LABELS[item.category_tag] || item.category_tag }}</div>
             <div class="suggestion-name">{{ item.name }}</div>
+            <ul v-if="item.components && item.components.length" class="component-list component-list-sm">
+              <li v-for="(c, ci) in item.components" :key="ci" class="component-row">
+                <span class="component-name">{{ c.item }}</span>
+                <span class="component-cal">{{ c.calories }} kcal</span>
+              </li>
+            </ul>
             <div class="suggestion-chips">
-              <span class="chip chip-cal">~{{ item.estimated_calories }} kcal</span>
+              <span class="chip chip-cal">Total ~{{ item.estimated_calories }} kcal</span>
               <span class="chip chip-price">PKR {{ item.price_min_pkr }}–{{ item.price_max_pkr }}</span>
             </div>
           </div>
@@ -347,6 +360,27 @@ onMounted(loadAll)
 }
 .suggestion-name { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .suggestion-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.45; }
+
+/* Component breakdown */
+.component-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  border-left: 2px solid var(--border-light);
+  padding-left: 10px;
+}
+.component-list-sm { margin-bottom: 8px; }
+.component-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.component-name { flex: 1; line-height: 1.35; }
+.component-cal  { font-weight: 600; white-space: nowrap; color: var(--text-light); font-size: 12px; }
 
 .suggestion-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .chip { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; }
