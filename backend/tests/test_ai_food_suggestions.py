@@ -7,8 +7,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
 
-from app.models import AiFoodSuggestionUsage, MealEntry, MealType
+from app.models import AiFoodSuggestionSession, AiFoodSuggestionUsage, MealEntry, MealType
 
 PKT = timezone(timedelta(hours=5))
 TODAY_PKT = datetime.now(PKT).date()
@@ -20,15 +21,17 @@ MOCK_SUGGESTIONS_RAW = [
         "estimated_calories": 420,
         "estimated_price_min_pkr": 350,
         "estimated_price_max_pkr": 500,
-        "notes": "Good protein source. Available at any local dhaba or restaurant.",
+        "category_tag": "budget",
+        "notes": "Good protein source.",
     },
     {
         "name": "2 Boiled Eggs + Brown Bread + Dahi",
-        "description": "2 boiled eggs, 2 slices brown bread, small cup of dahi",
+        "description": "2 boiled eggs, 2 slices brown bread, cup of dahi",
         "estimated_calories": 360,
         "estimated_price_min_pkr": 200,
         "estimated_price_max_pkr": 320,
-        "notes": "Budget-friendly, high-protein option. Easy to make at home.",
+        "category_tag": "balanced",
+        "notes": "Budget-friendly, high-protein.",
     },
     {
         "name": "Seekh Kebab Meal",
@@ -36,21 +39,33 @@ MOCK_SUGGESTIONS_RAW = [
         "estimated_calories": 450,
         "estimated_price_min_pkr": 400,
         "estimated_price_max_pkr": 600,
-        "notes": "Available at local BBQ restaurants and food streets.",
+        "category_tag": "restaurant",
+        "notes": "Available at local BBQ restaurants.",
+    },
+    {
+        "name": "Lassi + Fruit Chaat",
+        "description": "Plain lassi and a small cup of fruit chaat",
+        "estimated_calories": 220,
+        "estimated_price_min_pkr": 150,
+        "estimated_price_max_pkr": 250,
+        "category_tag": "snack",
+        "notes": "Light and refreshing.",
+    },
+    {
+        "name": "Grilled Chicken Breast + Salad",
+        "description": "150g grilled chicken with green salad",
+        "estimated_calories": 330,
+        "estimated_price_min_pkr": 450,
+        "estimated_price_max_pkr": 600,
+        "category_tag": "protein",
+        "notes": "High protein, low fat.",
     },
 ]
 
 
 @pytest.fixture
 def mock_gemini():
-    """Patch Gemini so tests never hit the real API."""
-    import json
-    mock_response = AsyncMock()
-    mock_response.text = json.dumps({"suggestions": MOCK_SUGGESTIONS_RAW})
-
-    mock_client = AsyncMock()
-    mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
-
+    """Patch _call_gemini so tests never hit the real API."""
     with patch("app.routers.ai_food_suggestions.settings") as mock_settings, \
          patch("app.routers.ai_food_suggestions._call_gemini") as mock_call:
         mock_settings.gemini_api_key = "test-key"
@@ -58,6 +73,8 @@ def mock_gemini():
         mock_call.return_value = MOCK_SUGGESTIONS_RAW
         yield mock_call
 
+
+# ── 1. Usage starts at zero ───────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_get_usage_returns_zero_initially(auth_client: AsyncClient):
@@ -70,15 +87,19 @@ async def test_get_usage_returns_zero_initially(auth_client: AsyncClient):
     assert "date" in data
 
 
+# ── 2. Generate returns exactly 5 suggestions ────────────────────────────────
+
 @pytest.mark.asyncio
-async def test_generate_returns_three_suggestions(auth_client: AsyncClient, mock_gemini):
+async def test_generate_returns_five_suggestions(auth_client: AsyncClient, mock_gemini):
     resp = await auth_client.post("/api/ai-food-suggestions/generate")
     assert resp.status_code == 200
     data = resp.json()
-    assert "suggestions" in data
-    assert len(data["suggestions"]) == 3
+    assert "session" in data
+    assert len(data["session"]["items"]) == 5
     assert data["requests_limit"] == 5
 
+
+# ── 3. Response structure is correct ─────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_generate_response_structure(auth_client: AsyncClient, mock_gemini):
@@ -86,20 +107,31 @@ async def test_generate_response_structure(auth_client: AsyncClient, mock_gemini
     assert resp.status_code == 200
     data = resp.json()
 
-    assert "remaining_calories" in data
-    assert "daily_goal" in data
-    assert "consumed_today" in data
+    assert "session" in data
     assert "requests_used_today" in data
-    assert "generated_at" in data
+    assert "requests_limit" in data
 
-    for suggestion in data["suggestions"]:
-        assert "name" in suggestion
-        assert "description" in suggestion
-        assert "estimated_calories" in suggestion
-        assert "estimated_price_min_pkr" in suggestion
-        assert "estimated_price_max_pkr" in suggestion
-        assert suggestion["estimated_calories"] >= 0
+    sess = data["session"]
+    assert "id" in sess
+    assert "date" in sess
+    assert "generated_at" in sess
+    assert "daily_goal_snapshot" in sess
+    assert "consumed_snapshot" in sess
+    assert "remaining_snapshot" in sess
+    assert "request_number" in sess
 
+    for item in sess["items"]:
+        assert "name" in item
+        assert "description" in item
+        assert "estimated_calories" in item
+        assert "price_min_pkr" in item
+        assert "price_max_pkr" in item
+        assert "calories_after" in item
+        assert "category_tag" in item
+        assert item["estimated_calories"] >= 0
+
+
+# ── 4. Usage counter increments after each successful generation ──────────────
 
 @pytest.mark.asyncio
 async def test_generate_increments_usage(auth_client: AsyncClient, mock_gemini):
@@ -114,29 +146,31 @@ async def test_generate_increments_usage(auth_client: AsyncClient, mock_gemini):
     assert count_after_2 == count_after_1 + 1
 
 
+# ── 5. GET /usage reflects previous generates ────────────────────────────────
+
 @pytest.mark.asyncio
 async def test_usage_endpoint_reflects_requests(
     auth_client: AsyncClient, db_session, test_user, mock_gemini
 ):
-    # Make 2 requests
     await auth_client.post("/api/ai-food-suggestions/generate")
     await auth_client.post("/api/ai-food-suggestions/generate")
 
     resp = await auth_client.get("/api/ai-food-suggestions/usage")
     assert resp.status_code == 200
     data = resp.json()
-    # count is cumulative across all tests in session — just verify it's an int >= 2
     assert data["requests_used_today"] >= 2
     assert data["remaining_requests"] == max(0, 5 - data["requests_used_today"])
 
+
+# ── 6. Daily limit is enforced ────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_generate_respects_daily_limit(
     auth_client: AsyncClient, db_session, test_user, mock_gemini
 ):
-    """After 5 requests, the 6th must return 429."""
-    # Insert 5 usage rows directly so we don't have to make 5 real requests
+    """Sixth request must return 429."""
     from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
     stmt = sqlite_insert(AiFoodSuggestionUsage).values(
         user_id=test_user.id, date=TODAY_PKT, request_count=5
     ).on_conflict_do_update(
@@ -151,29 +185,99 @@ async def test_generate_respects_daily_limit(
     assert "limit" in resp.json()["detail"].lower()
 
 
+# ── 7. Item calories never exceed remaining budget ────────────────────────────
+
 @pytest.mark.asyncio
 async def test_suggestions_calories_do_not_exceed_remaining(
-    auth_client: AsyncClient, db_session, test_user, mock_gemini
+    auth_client: AsyncClient, mock_gemini
 ):
-    """Each suggestion must have estimated_calories <= remaining_calories."""
     resp = await auth_client.post("/api/ai-food-suggestions/generate")
     assert resp.status_code == 200
-    data = resp.json()
-    remaining = data["remaining_calories"]
-    for s in data["suggestions"]:
-        assert s["estimated_calories"] <= remaining, (
-            f"Suggestion '{s['name']}' has {s['estimated_calories']} kcal "
-            f"but remaining is only {remaining} kcal"
+    sess = resp.json()["session"]
+    remaining = sess["remaining_snapshot"]
+    for item in sess["items"]:
+        assert item["estimated_calories"] <= remaining, (
+            f"Item '{item['name']}' has {item['estimated_calories']} kcal "
+            f"but remaining snapshot is only {remaining} kcal"
         )
 
+
+# ── 8. Unauthenticated /usage returns 401/403 ────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_get_usage_unauthenticated(client: AsyncClient):
     resp = await client.get("/api/ai-food-suggestions/usage")
-    assert resp.status_code in (401, 403)  # HTTPBearer raises 401
+    assert resp.status_code in (401, 403)
 
+
+# ── 9. Unauthenticated /generate returns 401/403 ─────────────────────────────
 
 @pytest.mark.asyncio
 async def test_generate_unauthenticated(client: AsyncClient):
     resp = await client.post("/api/ai-food-suggestions/generate")
     assert resp.status_code in (401, 403)
+
+
+# ── 10. Session is persisted in DB after generation ──────────────────────────
+
+@pytest.mark.asyncio
+async def test_session_persisted_in_db(
+    auth_client: AsyncClient, db_session, test_user, mock_gemini
+):
+    resp = await auth_client.post("/api/ai-food-suggestions/generate")
+    assert resp.status_code == 200
+    session_id = resp.json()["session"]["id"]
+
+    from sqlalchemy.orm import selectinload
+    result = await db_session.execute(
+        select(AiFoodSuggestionSession)
+        .options(selectinload(AiFoodSuggestionSession.items))
+        .where(AiFoodSuggestionSession.id == session_id)
+    )
+    db_sess = result.scalar_one_or_none()
+    assert db_sess is not None
+    assert db_sess.user_id == test_user.id
+    assert len(db_sess.items) == 5
+    # Snapshot values must be frozen
+    assert db_sess.daily_goal_snapshot > 0
+    assert db_sess.consumed_snapshot >= 0
+    assert db_sess.remaining_snapshot >= 0
+
+
+# ── 11. GET /sessions/today returns all sessions for today ────────────────────
+
+@pytest.mark.asyncio
+async def test_get_today_sessions_returns_all(
+    auth_client: AsyncClient, mock_gemini
+):
+    await auth_client.post("/api/ai-food-suggestions/generate")
+    await auth_client.post("/api/ai-food-suggestions/generate")
+
+    resp = await auth_client.get("/api/ai-food-suggestions/sessions/today")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "sessions" in data
+    assert "requests_used_today" in data
+    assert len(data["sessions"]) >= 2
+    # Most recent first
+    if len(data["sessions"]) >= 2:
+        assert data["sessions"][0]["generated_at"] >= data["sessions"][1]["generated_at"]
+
+
+# ── 12. GET /sessions/latest returns most recent session ─────────────────────
+
+@pytest.mark.asyncio
+async def test_get_latest_session(auth_client: AsyncClient, mock_gemini):
+    resp1 = await auth_client.post("/api/ai-food-suggestions/generate")
+    assert resp1.status_code == 200
+    latest_id = resp1.json()["session"]["id"]
+
+    # Second generation should become the new latest
+    resp2 = await auth_client.post("/api/ai-food-suggestions/generate")
+    assert resp2.status_code == 200
+    newer_id = resp2.json()["session"]["id"]
+
+    resp_latest = await auth_client.get("/api/ai-food-suggestions/sessions/latest")
+    assert resp_latest.status_code == 200
+    assert resp_latest.json()["id"] == newer_id
+    assert newer_id != latest_id
