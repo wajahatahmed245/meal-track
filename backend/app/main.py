@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .consumer import run_consumer
 from .database import get_db, init_db
 from .routers import auth, drinks, exercise, food, meals, summary, user
-from .routers import ai_evaluation
+from .routers import ai_evaluation, ai_food_suggestions
 from .scheduler import create_scheduler, run_startup_catchup
 from .seed import seed_default_user
 
@@ -68,6 +68,7 @@ app.include_router(exercise.router)
 app.include_router(summary.router)
 app.include_router(food.router)
 app.include_router(ai_evaluation.router)
+app.include_router(ai_food_suggestions.router)
 
 
 @app.get("/api/health")

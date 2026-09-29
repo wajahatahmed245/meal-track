@@ -51,7 +51,8 @@ const navItems = [
   { path: '/progress',  icon: '📈', label: 'Progress'   },
   { path: '/goals',     icon: '🎯', label: 'Goals'      },
   { path: '/settings',      icon: '⚙️', label: 'Settings'      },
-  { path: '/ai-evaluation', icon: '🤖', label: 'AI Evaluation' },
+  { path: '/ai-evaluation',       icon: '🤖', label: 'AI Evaluation'      },
+  { path: '/ai-food-suggestions', icon: '🍽️', label: 'AI Food Suggestions' },
 ]
 </script>
 

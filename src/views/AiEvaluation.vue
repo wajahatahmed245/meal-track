@@ -1,5 +1,15 @@
 <template>
   <div class="page-content">
+    <!-- AI Food Suggestions quick-access card -->
+    <router-link to="/ai-food-suggestions" class="ai-link-card">
+      <div class="ai-link-icon">🍽️</div>
+      <div class="ai-link-body">
+        <div class="ai-link-title">AI Food Suggestions</div>
+        <div class="ai-link-sub">What can I eat with my remaining calories?</div>
+      </div>
+      <div class="ai-link-arrow">›</div>
+    </router-link>
+
     <!-- Header + date nav -->
     <div class="page-header">
       <h1 class="page-title">🤖 Artificial Intelligence Evaluation</h1>
@@ -408,4 +418,25 @@ watch(offset, () => loadEvaluation(), { immediate: true })
 .modal-card h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; }
 .modal-card p  { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0 0 20px; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* AI Food Suggestions link card */
+.ai-link-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--green-50), #f0fdf4);
+  border: 1px solid var(--green-200, #bbf7d0);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  color: var(--text);
+  text-decoration: none;
+  transition: box-shadow 0.15s;
+}
+.ai-link-card:hover { box-shadow: var(--shadow); }
+.ai-link-icon { font-size: 24px; }
+.ai-link-body { flex: 1; }
+.ai-link-title { font-size: 14px; font-weight: 700; color: var(--green-700); }
+.ai-link-sub   { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+.ai-link-arrow { font-size: 20px; color: var(--green-500); font-weight: 700; }
 </style>

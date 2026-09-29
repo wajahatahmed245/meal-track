@@ -12,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
-from app.models import AiDailyEvaluation, MealEntry, MealType, User
+from app.models import AiDailyEvaluation, AiFoodSuggestionUsage, MealEntry, MealType, User
 from app.schemas import GeminiEvaluationResult, MealEvaluationItem
 from app.security import hash_password
 
@@ -71,6 +71,7 @@ async def db_session(test_user) -> AsyncSession:
         # Clean up per-test data
         from sqlalchemy import delete
         await session.execute(delete(AiDailyEvaluation))
+        await session.execute(delete(AiFoodSuggestionUsage))
         await session.execute(delete(MealEntry))
         await session.commit()
 

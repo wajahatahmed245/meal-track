@@ -242,6 +242,34 @@ class AiEvaluationOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── AI Food Suggestions ───────────────────────────────────────────────────────
+
+class FoodSuggestionItem(BaseModel):
+    name: str
+    description: str
+    estimated_calories: int
+    estimated_price_min_pkr: int
+    estimated_price_max_pkr: int
+    notes: str = ""
+
+
+class FoodSuggestionsResponse(BaseModel):
+    remaining_calories: int
+    daily_goal: int
+    consumed_today: int
+    suggestions: List[FoodSuggestionItem]
+    requests_used_today: int
+    requests_limit: int
+    generated_at: str
+
+
+class SuggestionUsageResponse(BaseModel):
+    requests_used_today: int
+    requests_limit: int
+    remaining_requests: int
+    date: str
+
+
 class AiEvaluationDetail(BaseModel):
     """Full evaluation with parsed evaluation data for frontend display."""
     id: int

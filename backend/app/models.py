@@ -41,6 +41,7 @@ class User(Base):
     drinks: Mapped[List["DrinkEntry"]] = relationship("DrinkEntry", back_populates="user", cascade="all, delete-orphan")
     exercises: Mapped[List["ExerciseLog"]] = relationship("ExerciseLog", back_populates="user", cascade="all, delete-orphan")
     evaluations: Mapped[List["AiDailyEvaluation"]] = relationship("AiDailyEvaluation", back_populates="user", cascade="all, delete-orphan")
+    food_suggestion_usage: Mapped[List["AiFoodSuggestionUsage"]] = relationship("AiFoodSuggestionUsage", back_populates="user", cascade="all, delete-orphan")
 
 
 class MealEntry(Base):
@@ -117,3 +118,16 @@ class AiDailyEvaluation(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     user: Mapped["User"] = relationship("User", back_populates="evaluations")
+
+
+class AiFoodSuggestionUsage(Base):
+    """Tracks how many AI food suggestion requests a user has made on a given PKT date."""
+    __tablename__ = "ai_food_suggestion_usage"
+    __table_args__ = (UniqueConstraint("user_id", "date", name="uq_suggestion_usage_user_date"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    user: Mapped["User"] = relationship("User", back_populates="food_suggestion_usage")

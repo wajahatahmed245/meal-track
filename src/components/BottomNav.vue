@@ -25,7 +25,12 @@ const tabs = [
   { path: '/ai-evaluation',  icon: '🤖', label: 'AI'       },
 ]
 
-const isActive = (path) => path === '/' ? route.path === '/' : route.path.startsWith(path)
+const isActive = (path) => {
+  if (path === '/') return route.path === '/'
+  // Group all /ai-* paths under the AI tab
+  if (path === '/ai-evaluation') return route.path.startsWith('/ai')
+  return route.path.startsWith(path)
+}
 </script>
 
 <style scoped>
