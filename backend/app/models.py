@@ -42,6 +42,7 @@ class User(Base):
     exercises: Mapped[List["ExerciseLog"]] = relationship("ExerciseLog", back_populates="user", cascade="all, delete-orphan")
     evaluations: Mapped[List["AiDailyEvaluation"]] = relationship("AiDailyEvaluation", back_populates="user", cascade="all, delete-orphan")
     food_suggestion_usage: Mapped[List["AiFoodSuggestionUsage"]] = relationship("AiFoodSuggestionUsage", back_populates="user", cascade="all, delete-orphan")
+    food_suggestion_sessions: Mapped[List["AiFoodSuggestionSession"]] = relationship("AiFoodSuggestionSession", back_populates="user", cascade="all, delete-orphan")
 
 
 class MealEntry(Base):
@@ -131,3 +132,57 @@ class AiFoodSuggestionUsage(Base):
     request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     user: Mapped["User"] = relationship("User", back_populates="food_suggestion_usage")
+
+
+class AiFoodSuggestionSession(Base):
+    """
+    One persisted generation session — a single successful AI call.
+    Stores a snapshot of the calorie state at generation time so that
+    later meals do not retroactively alter historical records.
+    """
+    __tablename__ = "ai_food_suggestion_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    generated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    # Snapshot — frozen at generation time
+    daily_goal_snapshot: Mapped[int] = mapped_column(Integer, nullable=False)
+    consumed_snapshot: Mapped[int] = mapped_column(Integer, nullable=False)
+    remaining_snapshot: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Which request number this was on this day (1-5)
+    request_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    model_name: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+
+    user: Mapped["User"] = relationship("User", back_populates="food_suggestion_sessions")
+    items: Mapped[List["AiFoodSuggestionItem"]] = relationship(
+        "AiFoodSuggestionItem",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="AiFoodSuggestionItem.display_order",
+    )
+
+
+class AiFoodSuggestionItem(Base):
+    """One food suggestion within a session. Five per successful session."""
+    __tablename__ = "ai_food_suggestion_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("ai_food_suggestion_sessions.id"), nullable=False, index=True
+    )
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False)   # 1-5
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    estimated_calories: Mapped[int] = mapped_column(Integer, nullable=False)
+    price_min_pkr: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    price_max_pkr: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Projected total after eating this item (snapshot + estimated_calories)
+    calories_after: Mapped[int] = mapped_column(Integer, nullable=False)
+    # budget | balanced | restaurant
+    category_tag: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    notes: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+
+    session: Mapped["AiFoodSuggestionSession"] = relationship(
+        "AiFoodSuggestionSession", back_populates="items"
+    )

@@ -245,6 +245,7 @@ class AiEvaluationOut(BaseModel):
 # ── AI Food Suggestions ───────────────────────────────────────────────────────
 
 class FoodSuggestionItem(BaseModel):
+    """Gemini raw output item — also used as the ORM item serialiser."""
     name: str
     description: str
     estimated_calories: int
@@ -252,15 +253,45 @@ class FoodSuggestionItem(BaseModel):
     estimated_price_max_pkr: int
     notes: str = ""
 
+    model_config = {"from_attributes": True}
+
+
+class FoodSuggestionItemOut(BaseModel):
+    """Serialised DB item (includes extra persisted fields)."""
+    id: int
+    display_order: int
+    name: str
+    description: str
+    estimated_calories: int
+    price_min_pkr: int
+    price_max_pkr: int
+    calories_after: int
+    category_tag: str
+    notes: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoodSuggestionSessionOut(BaseModel):
+    """One persisted generation session with its five items."""
+    id: int
+    date: datetime_date
+    generated_at: datetime
+    daily_goal_snapshot: int
+    consumed_snapshot: int
+    remaining_snapshot: int
+    request_number: int
+    model_name: str
+    items: List[FoodSuggestionItemOut]
+
+    model_config = {"from_attributes": True}
+
 
 class FoodSuggestionsResponse(BaseModel):
-    remaining_calories: int
-    daily_goal: int
-    consumed_today: int
-    suggestions: List[FoodSuggestionItem]
+    """Returned by POST /generate — the freshly saved session."""
+    session: FoodSuggestionSessionOut
     requests_used_today: int
     requests_limit: int
-    generated_at: str
 
 
 class SuggestionUsageResponse(BaseModel):
@@ -268,6 +299,13 @@ class SuggestionUsageResponse(BaseModel):
     requests_limit: int
     remaining_requests: int
     date: str
+
+
+class TodaySessionsResponse(BaseModel):
+    """Returned by GET /sessions/today."""
+    sessions: List[FoodSuggestionSessionOut]
+    requests_used_today: int
+    requests_limit: int
 
 
 class AiEvaluationDetail(BaseModel):

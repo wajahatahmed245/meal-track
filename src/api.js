@@ -56,6 +56,8 @@ export const api = {
   getAiEvaluation:      (date)             => request('GET',  `/ai-evaluation?day=${date}`),
   generateAiEvaluation: (date, force=false) => request('POST', `/ai-evaluation?day=${date}&force=${force}`),
 
-  getFoodSuggestionUsage: ()  => request('GET',  '/ai-food-suggestions/usage'),
-  generateFoodSuggestions: () => request('POST', '/ai-food-suggestions/generate'),
+  getFoodSuggestionUsage:        ()  => request('GET',  '/ai-food-suggestions/usage'),
+  generateFoodSuggestions:       ()  => request('POST', '/ai-food-suggestions/generate'),
+  getTodayFoodSuggestionSessions:()  => request('GET',  '/ai-food-suggestions/sessions/today'),
+  getLatestFoodSuggestionSession:()  => request('GET',  '/ai-food-suggestions/sessions/latest'),
 }
