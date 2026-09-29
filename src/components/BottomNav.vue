@@ -18,17 +18,17 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 const tabs = [
-  { path: '/',               icon: '🏠', label: 'Home'     },
-  { path: '/food',           icon: '🍽️', label: 'Food'     },
-  { path: '/hydration',      icon: '💧', label: 'Water'    },
-  { path: '/exercise',       icon: '🏃', label: 'Exercise' },
-  { path: '/ai-evaluation',  icon: '🤖', label: 'AI'       },
+  { path: '/',                    icon: '🏠', label: 'Home'       },
+  { path: '/food',                icon: '🍽️', label: 'Food'       },
+  { path: '/hydration',           icon: '💧', label: 'Water'      },
+  { path: '/exercise',            icon: '🏃', label: 'Exercise'   },
+  { path: '/ai-food-suggestions', icon: '🤖', label: 'AI Suggest' },
 ]
 
 const isActive = (path) => {
   if (path === '/') return route.path === '/'
   // Group all /ai-* paths under the AI tab
-  if (path === '/ai-evaluation') return route.path.startsWith('/ai')
+  if (path === '/ai-food-suggestions') return route.path.startsWith('/ai')
   return route.path.startsWith(path)
 }
 </script>

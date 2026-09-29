@@ -3,6 +3,7 @@
     <div class="page-header">
       <h1 class="page-title">🍽️ AI Food Suggestions</h1>
       <p class="page-sub">Personalised Pakistani food ideas fitted to your remaining calories</p>
+      <router-link to="/ai-evaluation" class="ai-eval-link">🤖 View AI Daily Evaluation →</router-link>
     </div>
 
     <!-- Calorie status card -->
@@ -246,6 +247,15 @@ onMounted(loadAll)
   color: var(--text-muted);
   font-size: 14px;
   margin-top: 4px;
+}
+
+.ai-eval-link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--green-600);
+  font-weight: 600;
+  text-decoration: none;
 }
 
 /* Calorie card */
